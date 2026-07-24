@@ -1,0 +1,36 @@
+name: Markdown
+
+# Enforces the Markdown structure rules in
+# .github/instructions/markdown.instructions.md so non-conforming docs can never land:
+# hierarchical section numbering, an up-to-date Table of Contents, and aligned table
+# column pipes. The checker only rewrites heading lines, the TOC list, and table blocks
+# (prose, code fences, and $…$ math are left untouched), so it is safe across every .md
+# file.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "**/*.md"
+      - ".github/scripts/check_markdown.py"
+      - ".github/workflows/markdown.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  markdown-structure:
+    name: Markdown structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Markdown numbering, TOC, and table alignment
+        run: |
+          git ls-files '*.md' | xargs python .github/scripts/check_markdown.py
