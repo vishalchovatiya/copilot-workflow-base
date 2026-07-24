@@ -7,7 +7,20 @@ its own domain-specific `.github/` content layered on top.
 
 The two layers **combine**, they do not replace each other: your repo keeps its own
 `.github/copilot-instructions.md` and repo-specific `instructions/`, `prompts/`, `skills/`,
-and this submodule adds the generic baseline through committed VS Code settings.
+and this baseline adds the generic layer through VS Code settings.
+
+There are **two independent ways** to consume it, and you can use **both at the same time**:
+
+- **Per-repo submodule** (committed, pinned) — vendor the baseline into one repo at
+  `.github/shared/` so teammates and CI get exactly the same pinned version. Best for shared
+  projects. See [Add it to a repository](#add-it-to-a-repository-one-time).
+- **Machine-wide** (User settings, live) — point your VS Code **User** settings at a single
+  clone so **every** workspace on that machine inherits the baseline, updating the instant you
+  `git pull`. Best for your personal editor. See
+  [Machine-wide setup](#machine-wide-setup-every-vs-code-window).
+
+They layer cleanly: a repo can carry the pinned submodule *and* your machine can apply the
+machine-wide copy. If a file happens to load from both, it simply applies twice (harmless).
 
 ## What's inside
 
@@ -99,6 +112,67 @@ git -C .github/shared pull origin main   # or: git submodule update --remote .gi
 git add .github/shared
 git commit -m "chore: bump copilot-workflow-base"
 ```
+
+## Machine-wide setup (every VS Code window)
+
+Use this when you want the baseline in **all** VS Code windows on a machine, independent of
+any repo. Instead of vendoring a submodule you point your **User** (global) settings at one
+clone.
+
+1. Clone once to a stable path:
+
+   ```bash
+   # Linux / macOS
+   git clone https://github.com/<you>/copilot-workflow-base.git ~/copilot-workflow-base
+   ```
+
+   ```powershell
+   # Windows PowerShell
+   git clone https://github.com/<you>/copilot-workflow-base.git "$env:USERPROFILE\copilot-workflow-base"
+   ```
+
+2. Open **User** settings JSON (`Ctrl+Shift+P` -> *Preferences: Open User Settings (JSON)*)
+   and add these keys. Unlike the submodule snippet, these are **absolute** paths (forward
+   slashes are valid in JSON on Windows too):
+
+   ```jsonc
+   {
+     "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+     "chat.useAgentSkills": true,
+     "chat.instructionsFilesLocations": {
+       "C:/Users/<you>/copilot-workflow-base/instructions": true
+     },
+     "chat.promptFilesLocations": {
+       "C:/Users/<you>/copilot-workflow-base/prompts": true
+     },
+     "chat.agentSkillsLocations": {
+       "C:/Users/<you>/copilot-workflow-base/skills": true
+     }
+   }
+   ```
+
+3. Reload the window (`Developer: Reload Window`). Every workspace now loads the baseline on
+   top of whatever `.github/` each project provides.
+
+**Does it update instantly?** Yes, effectively. All windows read the same folder, so:
+
+- Editing an instruction/prompt/skill file in that clone is picked up on the **next chat
+  request** in every open window — no reload.
+- `git pull` in the clone updates every window the same way, on the next request.
+- Changing *which folders* are listed (the settings keys themselves) needs a window reload.
+
+This is the opposite of the submodule, which is intentionally **pinned** and only moves when
+you run `git submodule update --remote`.
+
+**Caveats:**
+
+- Absolute paths are **not portable**. If you use Settings Sync, the literal path syncs to
+  other machines/OSes and may not exist there — clone to the same path everywhere, or keep
+  these keys in a machine-specific profile.
+- The `applyTo: **` baseline instructions now apply to **every** project on the machine —
+  that is the intent.
+- `.github/workflows/markdown.yml` is irrelevant machine-wide; GitHub Actions only run from a
+  repo's own root `.github/workflows/`.
 
 ## Why submodule (and not symlinks)
 
