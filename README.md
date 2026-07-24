@@ -50,11 +50,11 @@ consumed by many repos at once.
 
 ## Add it to a repository (one-time)
 
-Run these from the **root of the consuming repo**. Replace the URL with this repo's remote.
+Run these from the **root of the consuming repo**.
 
 ```bash
 # 1. add the submodule at .github/shared
-git submodule add https://github.com/<you>/copilot-workflow-base.git .github/shared
+git submodule add https://github.com/vishalchovatiya/copilot-workflow-base.git .github/shared
 
 # 2. make future clones/pulls pull submodules automatically
 git config submodule.recurse true
@@ -98,7 +98,8 @@ pwsh  .github/shared/bootstrap.ps1    # Windows PowerShell
 ## Clone a repo that already uses it
 
 ```bash
-git clone --recurse-submodules <repo-url>
+# <repo-url> is the consuming repo, e.g. chandoo:
+git clone --recurse-submodules https://github.com/vishalchovatiya/chandoo.git
 # already cloned without --recurse-submodules?
 git submodule update --init --recursive
 ```
@@ -123,30 +124,31 @@ clone.
 
    ```bash
    # Linux / macOS
-   git clone https://github.com/<you>/copilot-workflow-base.git ~/copilot-workflow-base
+   git clone https://github.com/vishalchovatiya/copilot-workflow-base.git ~/copilot-workflow-base
    ```
 
    ```powershell
    # Windows PowerShell
-   git clone https://github.com/<you>/copilot-workflow-base.git "$env:USERPROFILE\copilot-workflow-base"
+   git clone https://github.com/vishalchovatiya/copilot-workflow-base.git "$env:USERPROFILE\copilot-workflow-base"
    ```
 
 2. Open **User** settings JSON (`Ctrl+Shift+P` -> *Preferences: Open User Settings (JSON)*)
-   and add these keys. Unlike the submodule snippet, these are **absolute** paths (forward
-   slashes are valid in JSON on Windows too):
+   and add these keys as-is. `${userHome}` expands to your home directory on every OS, so
+   this snippet is copy-pastable without editing (it resolves to the `~/copilot-workflow-base`
+   / `%USERPROFILE%\copilot-workflow-base` clone from step 1):
 
    ```jsonc
    {
      "github.copilot.chat.codeGeneration.useInstructionFiles": true,
      "chat.useAgentSkills": true,
      "chat.instructionsFilesLocations": {
-       "C:/Users/<you>/copilot-workflow-base/instructions": true
+       "${userHome}/copilot-workflow-base/instructions": true
      },
      "chat.promptFilesLocations": {
-       "C:/Users/<you>/copilot-workflow-base/prompts": true
+       "${userHome}/copilot-workflow-base/prompts": true
      },
      "chat.agentSkillsLocations": {
-       "C:/Users/<you>/copilot-workflow-base/skills": true
+       "${userHome}/copilot-workflow-base/skills": true
      }
    }
    ```
@@ -166,9 +168,10 @@ you run `git submodule update --remote`.
 
 **Caveats:**
 
-- Absolute paths are **not portable**. If you use Settings Sync, the literal path syncs to
-  other machines/OSes and may not exist there — clone to the same path everywhere, or keep
-  these keys in a machine-specific profile.
+- `${userHome}` keeps the path portable across machines/OSes **as long as you clone to
+  `~/copilot-workflow-base` everywhere**. If you clone elsewhere, hardcode that absolute path
+  instead — but then it is not portable via Settings Sync, so keep it in a machine-specific
+  profile.
 - The `applyTo: **` baseline instructions now apply to **every** project on the machine —
   that is the intent.
 - `.github/workflows/markdown.yml` is irrelevant machine-wide; GitHub Actions only run from a
