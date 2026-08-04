@@ -28,13 +28,14 @@ machine-wide copy. If a file happens to load from both, it simply applies twice 
 copilot-workflow-base/
 ├── instructions/          # *.instructions.md with applyTo globs (always-on baseline)
 │   ├── context-engineering.instructions.md   # applyTo: **
-│   ├── markdown.instructions.md              # applyTo: **/*.md
 │   ├── python.instructions.md                # applyTo: **/*.py, pyproject.toml, ...
 │   ├── readme.instructions.md                # applyTo: **/README.md
 │   └── tests.instructions.md                 # applyTo: tests/**
 ├── prompts/               # shared *.prompt.md (placeholder — add yours here)
 ├── skills/
-│   └── boost-prompt/SKILL.md
+│   ├── boost-prompt/SKILL.md
+│   ├── learning-dashboard/SKILL.md
+│   └── markdown-formatting/SKILL.md          # CommonMark rules (auto-invoked on .md edits)
 ├── scripts/
 │   └── check_markdown.py  # section numbering + TOC + table-alignment checker/fixer
 ├── .github/workflows/
