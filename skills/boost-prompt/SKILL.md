@@ -22,7 +22,7 @@ Never produce `[paste X here]`, `{topic}`, `<your_input>`, `___`, or any templat
 
 ## Workflow
 
-1. **Clarify if needed.** If the user's intent is ambiguous, ask targeted questions about scope, audience, format, constraints. Keep questions minimal -- don't interrogate when you can infer. Use the `joyride_request_human_input` tool when clarification is needed.
+1. **Clarify if needed.** If the user's intent is ambiguous, ask targeted questions about scope, audience, format, constraints. Keep questions minimal -- don't interrogate when you can infer. Prefer the `joyride_request_human_input` tool when it is available; if Joyride is not installed (the tool is missing or errors), just ask your questions inline in the chat instead -- never block on it.
 2. **Explore context.** Use available tools to understand the user's project/workspace if relevant to writing a better prompt.
 3. **Rewrite.** Apply the principles below. Work through these mentally:
    - What concrete output does the user want? (document, decision, code, analysis)
@@ -31,13 +31,14 @@ Never produce `[paste X here]`, `{topic}`, `<your_input>`, `___`, or any templat
    - What's missing? (audience, format, length, constraints, examples, edge cases)
    - Handle gaps: assume non-essential details; for essential user-specific inputs, follow Rule 2.
    - Pick structure: single paragraph for simple tasks; XML tags for multi-section prompts.
-4. **Output.** Produce the optimized prompt in a fenced code block.
-5. **Clipboard.** Copy to clipboard via Joyride:
+4. **Output.** Always produce the optimized prompt in a fenced code block -- this is the deliverable and must appear regardless of whether any extension is present.
+5. **Clipboard (optional convenience).** If the Joyride extension is available, also copy the prompt to the clipboard so the user can paste immediately:
    ```clojure
    (require '["vscode" :as vscode])
    (vscode/env.clipboard.writeText "your-markdown-text-here")
    ```
-6. **Iterate.** Tell the user the prompt is on their clipboard. Ask if they want changes. Repeat copy + display + ask after any revision.
+   If Joyride is not installed (the eval tool is missing or errors), skip this step silently -- do not tell the user to install anything. The fenced code block from step 4 is the source of truth they can copy manually.
+6. **Iterate.** Tell the user the prompt is ready (mention it is on their clipboard only if step 5 actually succeeded). Ask if they want changes. Repeat display + (optional) copy + ask after any revision.
 
 ## Core Principles
 
