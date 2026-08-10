@@ -4,26 +4,39 @@
 
 .DESCRIPTION
   Idempotent and safe to re-run. It:
-    1. initializes/updates the .github/shared submodule (and nested ones),
-    2. sets `git config submodule.recurse true`,
-    3. (optional -CopySkills) copies shared skills into .github/skills/ as a fallback
+    1. installs the VS Code extensions vendored in extensions/ (skip with -NoExtensions),
+    2. initializes/updates the .github/shared submodule (and nested ones),
+    3. sets `git config submodule.recurse true`,
+    4. (optional -CopySkills) copies shared skills into .github/skills/ as a fallback
        for VS Code builds that lack the `chat.agentSkillsLocations` setting.
 
   Run from anywhere; it locates the consuming repo root itself:
-    pwsh .github/shared/bootstrap.ps1 [-CopySkills]
+    pwsh .github/shared/bootstrap.ps1 [-CopySkills] [-NoExtensions] [-CopyExtensions]
 
   Rollback: the copy fallback writes only into .github/skills/shared-* ; delete those
-  folders to undo. Everything else is standard git submodule state.
+  folders to undo. Extensions are removed with `extensions/install.ps1 -Uninstall`.
+  Everything else is standard git submodule state.
 #>
 [CmdletBinding()]
 param(
-  [switch]$CopySkills
+  [switch]$CopySkills,
+  [switch]$NoExtensions,
+  [switch]$CopyExtensions
 )
 
 $ErrorActionPreference = 'Stop'
 
 # This script lives at <repo>/.github/shared/bootstrap.ps1 → repo root is two levels up.
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Extensions are installed per machine, so this runs before any repo detection - it works
+# the same whether this clone is a submodule or a standalone machine-wide checkout.
+$ExtInstaller = Join-Path $ScriptDir 'extensions\install.ps1'
+if (-not $NoExtensions -and (Test-Path $ExtInstaller)) {
+  Write-Host "==> installing vendored VS Code extensions"
+  if ($CopyExtensions) { & $ExtInstaller -Copy } else { & $ExtInstaller }
+}
+
 $RepoRoot  = (Resolve-Path (Join-Path $ScriptDir '..\..')).Path
 
 try {

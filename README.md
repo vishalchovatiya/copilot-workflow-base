@@ -38,6 +38,9 @@ copilot-workflow-base/
 │   └── markdown-formatting/SKILL.md          # CommonMark rules (auto-invoked on .md edits)
 ├── scripts/
 │   └── check_markdown.py  # section numbering + TOC + table-alignment checker/fixer
+├── extensions/
+│   ├── install.ps1 / .sh  # generic installer; discovers every extension folder here
+│   └── md-flashcards/     # VS Code extension: `::` spaced-repetition over your notes
 ├── .github/workflows/
 │   └── markdown.yml        # self-lints this repo's own markdown
 ├── bootstrap.sh            # POSIX onboarding (Linux/macOS/Git-Bash)
@@ -48,6 +51,35 @@ copilot-workflow-base/
 
 Nothing here mentions any single project — it is deliberately domain-neutral so it can be
 consumed by many repos at once.
+
+## Vendored VS Code extensions
+
+`extensions/` holds optional, dependency-free VS Code extensions. Today that is
+`md-flashcards`, which turns any `::` line in your Markdown into an Anki-style flashcard with
+scheduling state stored as one sorted JSON file inside the notes repo.
+
+`bootstrap.ps1` / `bootstrap.sh` install everything under `extensions/` as their first step,
+so the same onboarding command that wires up instructions, prompts, and skills also installs
+these — no extra step. Pass `-NoExtensions` / `--no-extensions` to skip it, or drive the
+shared installer yourself:
+
+```powershell
+pwsh extensions/install.ps1 [-List] [-Copy] [-Uninstall] [<folder-name>...]
+```
+
+```bash
+bash extensions/install.sh [--list] [--copy] [--uninstall] [<folder-name>...]
+```
+
+Unlike instructions/prompts/skills, VS Code has no setting that points at an arbitrary
+extension folder, so the installer links each folder into `~/.vscode/extensions`; the code
+still lives here and updates on `git pull`.
+
+Adding your own is a matter of dropping a folder in — the installer discovers any subfolder
+whose `package.json` declares `publisher`, `name`, `version`, and `engines.vscode`. See
+[extensions/README.md](extensions/README.md) for the layout convention and ground rules, and
+[extensions/md-flashcards/README.md](extensions/md-flashcards/README.md) for the flashcard
+card syntax, scheduling algorithm, and state schema.
 
 ## Add it to a repository (one-time)
 

@@ -1,0 +1,128 @@
+{
+  "name": "md-flashcards",
+  "displayName": "Markdown Flashcards",
+  "description": "Anki-style spaced repetition over plain Markdown notes using the `::` delimiter.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./src/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "mdFlashcards.practiceFile",
+        "title": "Practice Whole File",
+        "category": "Flashcards"
+      },
+      {
+        "command": "mdFlashcards.practiceSection",
+        "title": "Practice Section...",
+        "category": "Flashcards"
+      },
+      {
+        "command": "mdFlashcards.practiceWorkspace",
+        "title": "Practice All Due Cards (Workspace)",
+        "category": "Flashcards"
+      },
+      {
+        "command": "mdFlashcards.showStats",
+        "title": "Show Card Count for File",
+        "category": "Flashcards"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "mdFlashcards.menu",
+        "label": "Flashcards"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "submenu": "mdFlashcards.menu",
+          "when": "resourceExtname == .md",
+          "group": "7_modification@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "mdFlashcards.menu",
+          "when": "resourceExtname == .md",
+          "group": "1_modification@1"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "submenu": "mdFlashcards.menu",
+          "when": "resourceExtname == .md",
+          "group": "1_modification@1"
+        }
+      ],
+      "mdFlashcards.menu": [
+        {
+          "command": "mdFlashcards.practiceSection",
+          "group": "flashcards@1"
+        },
+        {
+          "command": "mdFlashcards.practiceFile",
+          "group": "flashcards@2"
+        },
+        {
+          "command": "mdFlashcards.practiceWorkspace",
+          "group": "flashcards@3"
+        },
+        {
+          "command": "mdFlashcards.showStats",
+          "group": "flashcards@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "mdFlashcards.practiceFile",
+          "when": "resourceExtname == .md"
+        },
+        {
+          "command": "mdFlashcards.practiceSection",
+          "when": "resourceExtname == .md"
+        },
+        {
+          "command": "mdFlashcards.showStats",
+          "when": "resourceExtname == .md"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Markdown Flashcards",
+      "properties": {
+        "mdFlashcards.stateFile": {
+          "type": "string",
+          "default": ".flashcards/state.json",
+          "description": "Workspace-relative path of the scheduling state file. Commit it to git so reviews travel between machines."
+        },
+        "mdFlashcards.sessionLimit": {
+          "type": "number",
+          "default": 30,
+          "description": "Maximum cards per session. 0 means no limit."
+        },
+        "mdFlashcards.exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/node_modules/**",
+            "**/.git/**",
+            "**/Hide/**"
+          ],
+          "description": "Glob patterns skipped when scanning the workspace for cards."
+        }
+      }
+    }
+  }
+}

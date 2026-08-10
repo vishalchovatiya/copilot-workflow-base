@@ -2,22 +2,28 @@
 # bootstrap.sh — onboard a repository that consumes copilot-workflow-base.
 #
 # Idempotent and safe to re-run. It:
-#   1. initializes/updates the .github/shared submodule (and any nested ones),
-#   2. sets `git config submodule.recurse true` so future pulls stay in sync,
-#   3. (optional, --copy-skills) copies shared skills into .github/skills/ as a
+#   1. installs the VS Code extensions vendored in extensions/ (skip with --no-extensions),
+#   2. initializes/updates the .github/shared submodule (and any nested ones),
+#   3. sets `git config submodule.recurse true` so future pulls stay in sync,
+#   4. (optional, --copy-skills) copies shared skills into .github/skills/ as a
 #      fallback for VS Code builds that lack the `chat.agentSkillsLocations` setting.
 #
 # Run it from anywhere; it locates the consuming repo root itself:
-#   bash .github/shared/bootstrap.sh [--copy-skills]
+#   bash .github/shared/bootstrap.sh [--copy-skills] [--no-extensions] [--copy-extensions]
 #
 # Rollback: the copy fallback writes only into .github/skills/shared-*/ ; delete those
-# folders to undo. Everything else is standard git submodule state.
+# folders to undo. Extensions are removed with `extensions/install.sh --uninstall`.
+# Everything else is standard git submodule state.
 set -euo pipefail
 
 COPY_SKILLS=0
+NO_EXTENSIONS=0
+COPY_EXTENSIONS=0
 for arg in "$@"; do
   case "$arg" in
     --copy-skills) COPY_SKILLS=1 ;;
+    --no-extensions) NO_EXTENSIONS=1 ;;
+    --copy-extensions) COPY_EXTENSIONS=1 ;;
     -h|--help)
       grep '^#' "$0" | sed 's/^# \{0,1\}//'
       exit 0
@@ -28,6 +34,15 @@ done
 
 # This script lives at <repo>/.github/shared/bootstrap.sh → repo root is two levels up.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+
+# Extensions are installed per machine, so this runs before any repo detection - it works
+# the same whether this clone is a submodule or a standalone machine-wide checkout.
+EXT_INSTALLER="$SCRIPT_DIR/extensions/install.sh"
+if [ "$NO_EXTENSIONS" -eq 0 ] && [ -f "$EXT_INSTALLER" ]; then
+  echo "==> installing vendored VS Code extensions"
+  if [ "$COPY_EXTENSIONS" -eq 1 ]; then bash "$EXT_INSTALLER" --copy; else bash "$EXT_INSTALLER"; fi
+fi
+
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 if ! git -C "$REPO_ROOT" rev-parse --show-toplevel >/dev/null 2>&1; then

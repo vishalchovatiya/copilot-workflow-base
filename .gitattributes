@@ -1,0 +1,4 @@
+# Git normalizes text files, but shell scripts must stay LF in the working tree or bash
+# fails with `syntax error near unexpected token $'do\r'` on Windows checkouts.
+* text=auto
+*.sh text eol=lf
