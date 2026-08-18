@@ -34,6 +34,7 @@ copilot-workflow-base/
 ├── prompts/               # shared *.prompt.md (placeholder — add yours here)
 ├── skills/
 │   ├── boost-prompt/SKILL.md
+│   ├── knowledge-doc/SKILL.md                # retention-first .md explainer of any topic
 │   ├── learning-dashboard/SKILL.md
 │   └── markdown-formatting/SKILL.md          # CommonMark rules (auto-invoked on .md edits)
 ├── scripts/
