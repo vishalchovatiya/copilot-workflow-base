@@ -50,10 +50,10 @@ Right-click this file -> **Flashcards** -> **Practice Section...** -> pick
  ─────────────────────────────────────────────────────────────────────
  Three grades that keep a card in rotation
 
- [ Show answer (Space) ]
+ [ Show answer (0) ]
 ```
 
-Press `Space`:
+Press `0`:
 
 ```text
  1 / 2                                        samples/sample-cards.md:15
@@ -70,7 +70,7 @@ Press `Space`:
 ```
 
 Press `3`. The card's entry is written to `.flashcards/state.json` immediately and the next
-card appears. The path in the top-right corner is a link — click it (or press `O`) to open
-this note at line 15 in the neighbouring column, edit it, then click back on the panel and
-carry on grading. Choosing **Practice Whole File** instead reviews all cards in sections 1-4
-in shuffled order.
+card appears. The path in the top-right corner is a link — click it to open this note at
+line 15 in the neighbouring column, edit it, then click back on the panel and carry on
+grading. Choosing **Practice Whole File** instead reviews all cards in sections 1-4 in
+shuffled order.

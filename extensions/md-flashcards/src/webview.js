@@ -74,12 +74,13 @@ function html(webview) {
   #done { text-align: center; padding-top: 4rem; }
   #done h2 { font-weight: 600; }
   .hidden { display: none; }
+  body:focus, body:focus-visible { outline: none; }
 </style>
 </head>
-<body>
+<body tabindex="-1">
   <header>
     <span id="progress"></span>
-    <button id="source" data-action="open" title="Open this note at the card's line (O)"></button>
+    <button id="source" data-action="open" tabindex="-1" title="Open this note at the card's line"></button>
   </header>
 
   <main>
@@ -92,7 +93,7 @@ function html(webview) {
 
   <footer>
     <div class="row" id="revealRow">
-      <button data-action="reveal">Show answer <span class="k">(Space)</span></button>
+      <button data-action="reveal">Show answer <span class="k">(0)</span></button>
     </div>
     <div class="row hidden" id="gradeRow">
       <button data-grade="1">Again <span class="k">(1)</span><span class="iv" id="iv1"></span></button>
@@ -100,7 +101,7 @@ function html(webview) {
       <button data-grade="3">Good <span class="k">(3)</span><span class="iv" id="iv3"></span></button>
       <button data-grade="4">Easy <span class="k">(4)</span><span class="iv" id="iv4"></span></button>
     </div>
-    <div class="hint">Space / Enter reveal &middot; 1-4 grade &middot; click the file path (or O) to edit the note &middot; Esc end session</div>
+    <div class="hint">0 reveal &middot; 1-4 grade &middot; no other key does anything &middot; click the file path to edit the note</div>
   </footer>
 
 <script nonce="${n}">
@@ -133,19 +134,34 @@ function html(webview) {
     vscode.postMessage({ type: 'grade', grade: n });
   }
 
+  // A VS Code webview only receives key events while the iframe itself holds focus, and a
+  // focused button would swallow them, so focus is parked on <body> at every opportunity.
+  const focusPanel = () => { try { document.body.focus({ preventScroll: true }); } catch (err) { /* ignore */ } };
+
+  document.addEventListener('mousedown', focusPanel);
+  window.addEventListener('focus', focusPanel);
+
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
+    focusPanel();
     if (btn.dataset.action === 'reveal') reveal();
     else if (btn.dataset.action === 'open') vscode.postMessage({ type: 'open' });
     else if (btn.dataset.grade) grade(Number(btn.dataset.grade));
   });
 
+  // 0 reveals, 1-4 grade, everything else is deliberately inert. e.code is checked too so
+  // the numpad and non-US layouts behave the same as the number row.
   document.addEventListener('keydown', (e) => {
-    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); revealed ? grade(3) : reveal(); }
-    else if (e.key >= '1' && e.key <= '4') grade(Number(e.key));
-    else if (e.key === 'Escape') vscode.postMessage({ type: 'quit' });
-    else if (e.key === 'o' || e.key === 'O') vscode.postMessage({ type: 'open' });
+    if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+    const byCode = /^(?:Digit|Numpad)([0-4])$/.exec(e.code || '');
+    const digit = e.key && e.key.length === 1 && e.key >= '0' && e.key <= '4'
+      ? Number(e.key)
+      : (byCode ? Number(byCode[1]) : -1);
+    if (digit < 0) return;
+    e.preventDefault();
+    if (digit === 0) reveal();
+    else grade(digit);
   });
 
   window.addEventListener('message', (event) => {
@@ -166,6 +182,7 @@ function html(webview) {
         $('iv' + (i + 1)).textContent = msg.previews[key];
       }
       window.scrollTo(0, 0);
+      focusPanel();
     } else if (msg.type === 'done') {
       finished = true;
       $('card').classList.add('hidden');
@@ -178,6 +195,7 @@ function html(webview) {
     }
   });
 
+  focusPanel();
   vscode.postMessage({ type: 'ready' });
 }());
 </script>

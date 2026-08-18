@@ -108,7 +108,24 @@
         "mdFlashcards.sessionLimit": {
           "type": "number",
           "default": 30,
-          "description": "Maximum cards per session. 0 means no limit."
+          "description": "Maximum cards in a workspace-wide 'Practice All Due Cards' session. 0 means no limit. Practising a file or a section always covers every card in it."
+        },
+        "mdFlashcards.repeatUntilGrade": {
+          "type": "string",
+          "enum": [
+            "again",
+            "hard",
+            "good",
+            "easy"
+          ],
+          "enumDescriptions": [
+            "Never repeat within a session",
+            "Repeat only cards graded Again",
+            "Repeat cards graded Again or Hard",
+            "Repeat anything not graded Easy"
+          ],
+          "default": "good",
+          "description": "Keep showing a card within the session until it is graded at least this well."
         },
         "mdFlashcards.exclude": {
           "type": "array",

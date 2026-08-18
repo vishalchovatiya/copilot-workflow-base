@@ -9,10 +9,17 @@ const scheduler = require('./scheduler');
 const store = require('./store');
 const webview = require('./webview');
 
-const AGAIN_GAP = 4; // how many cards later a lapsed card comes back in the same session
+const RELEARN_GAP = 4; // how many cards later an unlearned card comes back in the same session
+const GRADE_ORDER = ['again', 'hard', 'good', 'easy'];
 
 function config() {
   return vscode.workspace.getConfiguration('mdFlashcards');
+}
+
+/** Lowest grade that retires a card for the session; anything below it is re-queued. */
+function repeatThreshold() {
+  const index = GRADE_ORDER.indexOf(config().get('repeatUntilGrade') || 'good');
+  return index < 0 ? scheduler.GRADES.good : index + 1;
 }
 
 function resolveUri(uri) {
@@ -43,6 +50,8 @@ function readCards(uri, root) {
   return parse(text, relative(root, uri.fsPath));
 }
 
+// Fisher-Yates: every permutation equally likely, unlike the `sort(() => Math.random() - .5)`
+// idiom, which is biased and leaves cards near their original neighbours.
 function shuffle(items) {
   const out = items.slice();
   for (let i = out.length - 1; i > 0; i--) {
@@ -52,24 +61,19 @@ function shuffle(items) {
   return out;
 }
 
-/** Due (and never-seen) cards first; falls back to the whole deck on request. */
-async function buildQueue(cards, state) {
+/** Whole deck, never truncated: due and never-seen cards first, then the ones scheduled ahead. */
+function orderDeck(cards, state) {
+  const due = [];
+  const later = [];
+  for (const card of cards) (scheduler.isDue(state.cards[card.id]) ? due : later).push(card);
+  return [...shuffle(due), ...shuffle(later)];
+}
+
+/** Workspace-wide sweep: due and never-seen cards only, capped by `sessionLimit`. */
+function orderDue(cards, state) {
   const limit = config().get('sessionLimit') || 0;
-  const due = cards.filter((c) => scheduler.isDue(state.cards[c.id]));
-
-  let pool = due;
-  if (due.length === 0) {
-    const answer = await vscode.window.showInformationMessage(
-      `Nothing is due here - all ${cards.length} card(s) are scheduled for later.`,
-      'Practice anyway',
-      'Cancel',
-    );
-    if (answer !== 'Practice anyway') return [];
-    pool = cards;
-  }
-
-  const queue = shuffle(pool);
-  return limit > 0 ? queue.slice(0, limit) : queue;
+  const due = shuffle(cards.filter((c) => scheduler.isDue(state.cards[c.id])));
+  return limit > 0 ? due.slice(0, limit) : due;
 }
 
 class Session {
@@ -79,8 +83,8 @@ class Session {
     this.state = state;
     this.root = root;
     this.total = queue.length;
-    this.done = 0;
-    this.lapses = 0;
+    this.reviews = 0;
+    this.repeats = 0;
     this.index = 0;
 
     this.panel = vscode.window.createWebviewPanel(
@@ -102,7 +106,6 @@ class Session {
     if (msg.type === 'ready') this.show();
     else if (msg.type === 'grade') this.grade(msg.grade);
     else if (msg.type === 'open') this.openNote().catch((err) => vscode.window.showWarningMessage(`Cannot open note: ${err.message}`));
-    else if (msg.type === 'quit') this.panel.dispose();
   }
 
   show() {
@@ -112,7 +115,7 @@ class Session {
         type: 'done',
         title: this.total ? 'Session complete' : 'Nothing to review',
         summary: this.total
-          ? `${this.done} card(s) reviewed, ${this.lapses} marked Again. State saved to ${relative(this.root, this.stateFile)}.`
+          ? `${this.total} card(s), ${this.reviews} review(s), ${this.repeats} repeat(s). State saved to ${relative(this.root, this.stateFile)}.`
           : 'No cards matched this selection.',
       });
       return;
@@ -135,11 +138,11 @@ class Session {
     this.state.cards[card.id] = store.entry(card, next);
     store.save(this.stateFile, this.state);
 
-    this.done++;
-    if (grade === scheduler.GRADES.again) {
-      this.lapses++;
-      // Requeue in-session so the card is actually re-learned before the day ends.
-      const at = Math.min(this.index + AGAIN_GAP, this.queue.length);
+    this.reviews++;
+    if (grade < repeatThreshold()) {
+      this.repeats++;
+      // Keep the card in rotation until it is answered well enough to retire for today.
+      const at = Math.min(this.index + RELEARN_GAP, this.queue.length);
       this.queue.splice(at, 0, card);
     }
     this.index++;
@@ -161,15 +164,18 @@ class Session {
   }
 }
 
-async function startSession(context, cards, uri, title) {
+async function startSession(context, cards, uri, title, queueFor) {
   const { root, file } = stateFileFor(uri);
   if (cards.length === 0) {
     vscode.window.showInformationMessage('No `::` cards found in this selection.');
     return;
   }
   const state = store.load(file);
-  const queue = await buildQueue(cards, state);
-  if (queue.length === 0) return;
+  const queue = queueFor(cards, state);
+  if (queue.length === 0) {
+    vscode.window.showInformationMessage(`All caught up - none of the ${cards.length} card(s) are due yet.`);
+    return;
+  }
   new Session(context, queue, file, state, title, root);
 }
 
@@ -178,7 +184,7 @@ async function practiceFile(context, uri) {
   if (!target) return;
   const { root } = stateFileFor(target);
   const { cards } = readCards(target, root);
-  await startSession(context, cards, target, path.basename(target.fsPath));
+  await startSession(context, cards, target, path.basename(target.fsPath), orderDeck);
 }
 
 async function practiceSection(context, uri) {
@@ -189,7 +195,7 @@ async function practiceSection(context, uri) {
 
   const withCards = headings.filter((h) => h.cards > 0);
   if (withCards.length === 0) {
-    await startSession(context, cards, target, path.basename(target.fsPath));
+    await startSession(context, cards, target, path.basename(target.fsPath), orderDeck);
     return;
   }
 
@@ -212,7 +218,7 @@ async function practiceSection(context, uri) {
   });
   if (!picked) return;
 
-  await startSession(context, cardsInSection(cards, picked.heading.line), target, picked.heading.title);
+  await startSession(context, cardsInSection(cards, picked.heading.line), target, picked.heading.title, orderDeck);
 }
 
 async function practiceWorkspace(context) {
@@ -239,7 +245,7 @@ async function practiceWorkspace(context) {
       }
     },
   );
-  await startSession(context, all, folder.uri, path.basename(root));
+  await startSession(context, all, folder.uri, path.basename(root), orderDue);
 }
 
 async function showStats(uri) {

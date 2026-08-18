@@ -121,9 +121,16 @@ Right-click any `.md` file — in the Explorer, in the editor, or on the editor 
 
 The same commands are on the Command Palette under `Flashcards:`.
 
-A session queues only cards that are **due** (never-reviewed cards count as due), shuffles
-them, and caps the run at `mdFlashcards.sessionLimit`. If nothing is due you get a prompt to
-practice the deck anyway.
+**Practising a file or a section always covers every card in it** — nothing is dropped and
+nothing is capped. Cards that are due (never-reviewed ones count as due) are shuffled to the
+front, then the cards already scheduled for a later date follow, also shuffled. The
+workspace-wide sweep is the exception: it takes due cards only and caps the run at
+`mdFlashcards.sessionLimit`, since that pool spans every note you own.
+
+The shuffle is **Fisher-Yates**, which makes every ordering equally likely. The common
+`sort(() => Math.random() - 0.5)` one-liner is not used: it is measurably biased and tends to
+leave cards near their original neighbours, so a note's list order would leak into the
+session.
 
 Notes and state are re-read from scratch at the start of every session — nothing is cached.
 Edit a note, add a `::`, fix a typo, or `git pull` someone else's changes, and the very next
@@ -133,18 +140,29 @@ window reload is a change to the extension's own source.
 
 ### 4.2. Keyboard Shortcuts
 
-| #   | Key             | Action                                                                            |
-| --- | --------------- | --------------------------------------------------------------------------------- |
-| 1   | `Space` `Enter` | Reveal the back; press again to grade **Good**                                    |
-| 2   | `1`             | **Again** — forgot it; ease −0.20, due again today                                |
-| 3   | `2`             | **Hard** — recalled with effort; ease −0.15, interval × 1.2                       |
-| 4   | `3`             | **Good** — recalled; interval × ease                                              |
-| 5   | `4`             | **Easy** — instant; ease +0.15, interval × ease × 1.3                             |
-| 6   | `O`             | Open the source note at the card's line — same as clicking the path in the header |
-| 7   | `Esc`           | End the session (progress is already saved)                                       |
+Number keys are the only keyboard input the panel accepts:
 
-Each grade button shows the interval it would produce, exactly like Anki. A card graded
-**Again** is re-queued four cards later in the same session so you actually relearn it.
+| #   | Key           | Action                                                        |
+| --- | ------------- | ------------------------------------------------------------- |
+| 1   | `0`           | Reveal the back                                               |
+| 2   | `1`           | **Again** — forgot it; ease −0.20, due again today            |
+| 3   | `2`           | **Hard** — recalled with effort; ease −0.15, interval × 1.2   |
+| 4   | `3`           | **Good** — recalled; interval × ease                          |
+| 5   | `4`           | **Easy** — instant; ease +0.15, interval × ease × 1.3         |
+| 6   | anything else | Nothing at all — no key advances or grades a card by accident |
+
+`1`-`4` are inert until the back is showing, key repeat is ignored so holding a number cannot
+burn through the queue, and modifier combos (`Ctrl+3`) pass through to VS Code untouched.
+Close the panel tab to end a session; everything graded so far is already saved.
+
+Each grade button shows the interval it would produce, exactly like Anki.
+
+A card you grade **below Good** does not leave the session: it is pushed back into the queue
+four cards later and keeps returning until you finally grade it **Good** or **Easy**. So
+*Again* and *Hard* both mean "show me this again today", and the session length grows as you
+struggle. Change where that line sits with `mdFlashcards.repeatUntilGrade` — set it to `hard`
+if only *Again* should repeat, `easy` if even *Good* should repeat, or `again` to switch
+in-session repeats off entirely.
 
 The file path in the top-right corner is a link: click it to jump straight to that card's
 line in the note. The note opens in the column next to the panel, so the session stays on
@@ -263,11 +281,12 @@ inside the same session — after which it climbs again from a permanently lower
 
 ## 7. Settings
 
-| #   | Setting                     | Default                                          | Purpose                                     |
-| --- | --------------------------- | ------------------------------------------------ | ------------------------------------------- |
-| 1   | `mdFlashcards.stateFile`    | `.flashcards/state.json`                         | Workspace-relative path of the state file   |
-| 2   | `mdFlashcards.sessionLimit` | `30`                                             | Max cards per session; `0` disables the cap |
-| 3   | `mdFlashcards.exclude`      | `**/node_modules/**`, `**/.git/**`, `**/Hide/**` | Globs skipped by the workspace-wide scan    |
+| #   | Setting                         | Default                                          | Purpose                                                                                                 |
+| --- | ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| 1   | `mdFlashcards.stateFile`        | `.flashcards/state.json`                         | Workspace-relative path of the state file                                                               |
+| 2   | `mdFlashcards.sessionLimit`     | `30`                                             | Cap on the **workspace-wide** sweep only; `0` disables it. File and section sessions are never capped   |
+| 3   | `mdFlashcards.repeatUntilGrade` | `good`                                           | Keep re-showing a card in the session until it is graded at least this well (`again` turns repeats off) |
+| 4   | `mdFlashcards.exclude`          | `**/node_modules/**`, `**/.git/**`, `**/Hide/**` | Globs skipped by the workspace-wide scan                                                                |
 
 Commit `.flashcards/state.json` to git — that is the whole sync story across machines.
 
@@ -275,10 +294,11 @@ Commit `.flashcards/state.json` to git — that is the whole sync story across m
 
 ## 8. Troubleshooting
 
-| #   | Symptom                                | Fix                                                                                      |
-| --- | -------------------------------------- | ---------------------------------------------------------------------------------------- |
-| 1   | No **Flashcards** entry on right-click | Run **Developer: Reload Window**; confirm the folder exists under `~/.vscode/extensions` |
-| 2   | "No `::` cards found"                  | The `::` needs a space or line end after it; check the line is not inside a fence        |
-| 3   | A card lost its history                | Its front text changed — expected; see [6.2](#62-state-schema)                           |
-| 4   | Junction/symlink refused               | Re-run the installer with `-Copy` / `--copy`, and re-run it after each `git pull`        |
-| 5   | Want to reset one card                 | Delete its entry from `.flashcards/state.json`                                           |
+| #   | Symptom                                | Fix                                                                                                                                                                 |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | No **Flashcards** entry on right-click | Run **Developer: Reload Window**; confirm the folder exists under `~/.vscode/extensions`                                                                            |
+| 2   | "No `::` cards found"                  | The `::` needs a space or line end after it; check the line is not inside a fence                                                                                   |
+| 3   | A card lost its history                | Its front text changed — expected; see [6.2](#62-state-schema)                                                                                                      |
+| 4   | Junction/symlink refused               | Re-run the installer with `-Copy` / `--copy`, and re-run it after each `git pull`                                                                                   |
+| 5   | Want to reset one card                 | Delete its entry from `.flashcards/state.json`                                                                                                                      |
+| 6   | `0`-`4` do nothing                     | The panel needs keyboard focus — click once anywhere inside it. If it still ignores keys after **Developer: Reload Window**, the old extension code is still loaded |
