@@ -1,0 +1,192 @@
+# deckforge design tokens — the default, domain-neutral theme.
+#
+# Everything the builder draws resolves through this file: no module contains a hex
+# literal or a coordinate. Copy this file, change the values, drop it in
+# `<workspace>/decks/themes/<name>.yaml` and you have a second on-brand look with no
+# code change. Pair it with a template harvested from a real branded deck
+# (`deckforge harvest`) so the master, layouts, fonts and logo come along too.
+#
+# The palette intentionally reuses the Mermaid role colours from the repo's
+# markdown-formatting skill, so generated decks and generated documentation read as
+# one family.
+
+name: neutral
+description: >-
+  Neutral professional theme: cool blue primary, teal secondary, restrained accents,
+  near-black type on a white ground. Ships with the package so the repo stays
+  domain-neutral.
+
+# Slide surface. 16:9 widescreen.
+canvas:
+  width_in: 13.333
+  height_in: 7.5
+
+# The one alignment grid. Nothing is placed by eye; every archetype derives its
+# geometry from these numbers.
+grid:
+  margin_left_in: 0.72        # every element starts here
+  margin_right_in: 0.72
+  title_top_in: 0.34
+  title_height_in: 0.80
+  title_right_guard_in: 0.90  # keeps long titles clear of a master logo
+  accent_top_in: 1.27         # brand bar under every content title
+  accent_width_in: 2.02
+  accent_height_in: 0.045
+  body_top_in: 1.58
+  body_bottom_in: 6.52        # clears the footer band
+  footer_top_in: 6.86
+  footer_height_in: 0.28
+  logo_guard_in: 0.83         # top-right square never drawn into
+
+# Gutters, padding and fixed element heights.
+spacing:
+  card_gap_in: 0.20
+  panel_gap_in: 0.30
+  row_gap_in: 0.07
+  card_pad_in: 0.22
+  chevron_overlap_in: 0.10
+  chevron_text_inset_in: 0.34  # past the chevron notch, or the label clips
+  table_margin_h_in: 0.10
+  table_margin_v_in: 0.05
+  table_row_min_in: 0.26
+  bullet_indent_in: 0.24
+  sub_indent_in: 0.28
+  callout_height_in: 0.44
+  accent_edge_in: 0.06         # coloured edge bar on a card or callout
+  hairline_pt: 1.0
+
+# Archetype geometry. Every size an archetype draws lives here, so a second theme can
+# change the proportions of the deck without touching a line of Python.
+layout:
+  # Where the leftover height in the body band goes. 0.0 hangs the block off the top
+  # and dumps every spare inch above the callout, which reads as an unfinished slide;
+  # 0.5 is dead centre. Slightly under half sits on the optical centre.
+  block_bias: 0.42
+  # Least share of the body band a row of boxes takes, whatever its copy measures.
+  # Without it a row of two-line cards renders as thin strips floating in white space.
+  block_fill: 0.46
+  card_min_height_in: 1.05
+  card_max_height_in: 3.60
+  card_round_adjust: 0.05      # corner radius of a card
+  node_min_height_in: 1.30     # summary-diagram node
+  head_gap_in: 0.14            # panel heading to its first bullet
+  lead_gap_in: 0.12            # lead line to the bullets under it
+  chevron_height_in: 0.86
+  chevron_adjust: 0.20         # notch depth; deeper needs a bigger text inset
+  caption_gap_in: 0.14
+  caption_height_in: 0.60
+  connector_gap_in: 0.04       # clearance between a connector and the shape it joins
+  legend_gap_in: 0.06
+  legend_height_in: 0.26
+  table_max_height_in: 4.40
+  hero_top_in: 2.20            # title slide
+  hero_height_in: 1.60
+  hero_width_ratio: 0.78
+  hero_rule_gap_in: 0.18
+  hero_rule_width_in: 2.40
+  hero_sub_gap_in: 0.42
+  numeral_width_in: 1.60       # section divider
+  numeral_height_in: 1.40
+  numeral_gap_in: 0.30
+  progress_height_in: 0.30
+  progress_label_gap_in: 0.10
+  statement_width_ratio: 0.82
+  artifact_split_ratio: 0.62   # artifact width when bullets share the slide
+  artifact_wide_ratio: 3.0     # past this width-to-height, bullets go under, not beside
+  hub_width_in: 3.20
+  hub_height_in: 1.00
+  spoke_height_in: 0.90
+
+# Raw palette. Names are semantic-free; roles below give them meaning.
+palette:
+  ink: '#1F2933'
+  muted: '#6B7A8A'
+  surface: '#FFFFFF'
+  surface_alt: '#F4F6F8'
+  border: '#D6DDE4'
+  primary: '#2F6FB3'
+  secondary: '#45818E'
+  accent: '#8E44AD'
+  caution: '#BF9000'
+  positive: '#538135'
+  alert: '#CC7A00'
+  on_dark: '#FFFFFF'
+
+# Semantic roles. Code asks for a role, never a palette key, wherever the meaning is
+# fixed (body text, hairlines, card fills).
+roles:
+  title_text: ink
+  body_text: ink
+  secondary_text: muted
+  on_primary: on_dark
+  card_fill: surface_alt
+  hairline: border
+  page: surface
+
+# Colours a deck spec is allowed to assign to a recurring entity. One entity keeps one
+# colour for the whole deck, everywhere it appears.
+entity_roles: [primary, secondary, accent, caution, positive, alert]
+
+# Named blend levels toward the surface colour. Large fills are always a tint; full
+# strength colour is reserved for bars, borders and connectors.
+tints:
+  flat: 0.00    # bars under 0.08in, borders, connectors
+  mid: 0.62     # chevron ramps, emphasis fills
+  chip: 0.80    # status chips with a matching border
+  panel: 0.88   # cards, panels, diagram blocks
+  wash: 0.94    # table body rows, callout strips
+
+typography:
+  # One family keeps metrics predictable across OSes; weight carries emphasis.
+  # Calibri is metric-compatible with Carlito, which is what LibreOffice substitutes
+  # on Linux, so headless rendering matches PowerPoint closely enough to trust.
+  fonts:
+    title: Calibri
+    body: Calibri
+    mono: Consolas
+  # Inches of advance width per point of type per character. Used to predict wrapping
+  # so the builder can step titles down and route overflow before rendering.
+  char_width_ratio: 0.0072
+  scale:
+    hero:  { size_pt: 40, line: 0.98, font: title, bold: true }
+    title: { size_pt: 32, line: 0.95, font: title, bold: true }
+    lead:  { size_pt: 20, line: 1.10, font: body }
+    body:  { size_pt: 18, line: 1.12, font: body, space_after_pt: 8 }
+    small: { size_pt: 14, line: 1.10, font: body, space_after_pt: 5 }
+    micro: { size_pt: 11, line: 1.12, font: body, space_after_pt: 3 }
+    tiny:  { size_pt: 9,  line: 1.15, font: body }
+    eyebrow: { size_pt: 9, line: 1.05, font: body, caps: true }
+  # (max characters, size in points) — a title steps down instead of wrapping.
+  title_steps:
+    - [40, 32]
+    - [52, 28]
+    - [70, 24]
+    - [999, 20]
+
+# Hard content limits. The builder enforces these rather than silently shrinking type.
+budget:
+  max_bullets: 6
+  max_words_per_bullet: 12
+  max_title_chars: 70
+  max_takeaway_words: 14
+  min_notes_chars: 150
+  max_notes_chars: 1200
+  overflow: notes     # 'notes' routes surplus bullets into the notes pane; 'fail' raises
+
+# Base template this theme expects. Resolved relative to the workspace, then to the
+# package. Generate the default one with: deckforge init-template
+template: neutral-base.pptx
+
+# Slide-layout indices in that template, by role. `deckforge harvest` prints the index
+# of every layout in a corporate template so a new theme can name them here.
+layouts:
+  title: 0
+  section: 2
+  content: 5
+  blank: 6
+
+chrome:
+  accent_bar: true      # gradient brand bar under the title on every content slide
+  kicker: true          # section name, top-right, level with the accent bar
+  slide_number: true    # live `slidenum` field, injected because masters do not clone
+  takeaway: true        # visually distinct one-line claim at the foot of the slide

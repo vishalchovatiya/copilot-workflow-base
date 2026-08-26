@@ -28,17 +28,21 @@ machine-wide copy. If a file happens to load from both, it simply applies twice 
 copilot-workflow-base/
 ├── instructions/          # *.instructions.md with applyTo globs (always-on baseline)
 │   ├── context-engineering.instructions.md   # applyTo: **
+│   ├── deck-design.instructions.md           # applyTo: deck specs, themes, builder code
 │   ├── python.instructions.md                # applyTo: **/*.py, pyproject.toml, ...
 │   ├── readme.instructions.md                # applyTo: **/README.md
 │   └── tests.instructions.md                 # applyTo: tests/**
 ├── prompts/               # shared *.prompt.md (placeholder — add yours here)
 ├── skills/
 │   ├── boost-prompt/SKILL.md
+│   ├── deck-builder/SKILL.md                 # topic -> fully-editable .pptx via deckforge
 │   ├── knowledge-doc/SKILL.md                # retention-first .md explainer of any topic
 │   ├── learning-dashboard/SKILL.md
 │   └── markdown-formatting/SKILL.md          # CommonMark rules (auto-invoked on .md edits)
 ├── scripts/
-│   └── check_markdown.py  # section numbering + TOC + table-alignment checker/fixer
+│   ├── check_markdown.py  # section numbering + TOC + table-alignment checker/fixer
+│   ├── deck.py            # cross-platform launcher for the deckforge CLI
+│   └── deckforge/         # PowerPoint generation: themes, archetypes, artifacts, verifier
 ├── extensions/
 │   ├── install.ps1 / .sh  # generic installer; discovers every extension folder here
 │   └── md-flashcards/     # VS Code extension: `::` spaced-repetition over your notes
@@ -52,6 +56,33 @@ copilot-workflow-base/
 
 Nothing here mentions any single project — it is deliberately domain-neutral so it can be
 consumed by many repos at once.
+
+## Deck generation
+
+`scripts/deckforge/` turns a content-only spec into a **fully-editable `.pptx`** — every
+element a native PowerPoint shape or table, never a rasterised diagram. It reads its
+palette, grid and type scale from a theme token file, harvests templates and reusable
+design artifacts out of decks you already have, and verifies the result before you open
+it.
+
+```bash
+python scripts/deck.py doctor                                       # what this machine can render
+python scripts/deck.py harvest "/path/to/branded.pptx" --name acme  # template + design report
+python scripts/deck.py build PRESENTATION/specs/feedback-loop.deck.yaml
+```
+
+```powershell
+python scripts\deck.py doctor
+python scripts\deck.py harvest "C:\path\to\branded.pptx" --name acme
+python scripts\deck.py build PRESENTATION\specs\feedback-loop.deck.yaml
+```
+
+Decks land in `<workspace>/PRESENTATION` unless you pass `--out`. The
+[deck-builder skill](skills/deck-builder/SKILL.md) drives the whole flow from a chat
+request, and [deck-design.instructions.md](instructions/deck-design.instructions.md)
+applies the design rules automatically whenever a spec or builder file is edited. See
+[scripts/deckforge/README.md](scripts/deckforge/README.md) for the artifact-reuse model,
+the spec format and the full command reference.
 
 ## Vendored VS Code extensions
 

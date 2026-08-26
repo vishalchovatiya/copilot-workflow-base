@@ -2,3 +2,17 @@
 .DS_Store
 Thumbs.db
 *.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+
+# deckforge: rendered slide images are build output, not source
+*_render/
+*.build.json
+
+# Scratch area for source decks you harvest from — never commit corporate material
+TEMP/
+PRESENTATION/
