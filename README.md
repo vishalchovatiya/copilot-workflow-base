@@ -48,6 +48,8 @@ copilot-workflow-base/
 ├── extensions/
 │   ├── install.ps1 / .sh  # generic installer; discovers every extension folder here
 │   └── md-flashcards/     # VS Code extension: `::` spaced-repetition over your notes
+├── vendor/
+│   └── last30days-skill/  # submodule: multi-source research skill (see below)
 ├── .github/workflows/
 │   └── markdown.yml        # self-lints this repo's own markdown
 ├── bootstrap.sh            # POSIX onboarding (Linux/macOS/Git-Bash)
@@ -127,6 +129,64 @@ whose `package.json` declares `publisher`, `name`, `version`, and `engines.vscod
 [extensions/md-flashcards/README.md](extensions/md-flashcards/README.md) for the flashcard
 card syntax, scheduling algorithm, and state schema.
 
+## Vendored research skill: last30days
+
+`vendor/last30days-skill/` is a **git submodule** of
+[mvanhorn/last30days-skill](https://github.com/mvanhorn/last30days-skill) (MIT) — an agent
+skill that researches a topic across Reddit, X, YouTube, TikTok, Hacker News, Polymarket,
+GitHub and the web, scores results by real engagement, and synthesises one grounded brief.
+
+It is a submodule, not a vendored copy, because it is a versioned Python application (~33 MB,
+126 modules) with its own release cadence — a copy would bloat this repo's history on every
+re-sync and strand you on a stale version. The submodule records only a commit pointer.
+`bootstrap.sh` / `bootstrap.ps1` already run `submodule update --init --recursive`, so it
+clones itself during onboarding.
+
+**Prerequisites:** `python3` >= 3.12 and `node` on PATH. There are no pip dependencies — the
+runtime is standard library only.
+
+**Activation.** It is a skill, not an instruction: nothing enters your prompt until the agent
+invokes it, so it costs nothing on unrelated work. It needs the `chat.agentSkillsLocations`
+entry from the settings block above — `.github/shared/vendor/last30days-skill/skills` for the
+submodule layout, `${userHome}/copilot-workflow-base/vendor/last30days-skill/skills`
+machine-wide.
+
+**Use it** by asking in Copilot Chat, in plain language:
+
+```text
+last30days what are people saying about MCP servers
+last30days Peter Steinberger
+last30days what's trending in AI agents      # topic-less discovery
+last30days search my library for MCP servers # offline search of past briefs
+```
+
+Verify the install without running any research or touching credentials:
+
+```bash
+python3 vendor/last30days-skill/skills/last30days/scripts/last30days.py --preflight
+```
+
+Reddit, Hacker News, Polymarket and GitHub work with zero configuration. X, YouTube, TikTok
+and the rest unlock by setting API keys or browser sessions — see upstream's
+[Bring your own keys](https://github.com/mvanhorn/last30days-skill#bring-your-own-keys) and
+[CONFIGURATION.md](https://github.com/mvanhorn/last30days-skill/blob/main/CONFIGURATION.md).
+Briefs are written to `~/Documents/Last30Days/` unless `LAST30DAYS_MEMORY_DIR` says otherwise.
+
+**Two things to know.** Its `SKILL.md` is ~258 KB, so an invocation loads far more context
+than the rest of this baseline combined — expect it to crowd the window during a run. And to
+reach authenticated sources it can read your Chrome/Safari cookie jars; `--preflight` reports
+`Browser cookies: off` until you opt in, and reads nothing itself.
+
+**Update** to the latest upstream release, then commit the moved pointer:
+
+```bash
+git -C vendor/last30days-skill pull origin main
+git add vendor/last30days-skill && git commit -m "chore: bump last30days-skill"
+```
+
+**Remove it** with `git rm vendor/last30days-skill` plus the matching
+`chat.agentSkillsLocations` line.
+
 ## Add it to a repository (one-time)
 
 Run these from the **root of the consuming repo**.
@@ -161,7 +221,8 @@ Linux):
   },
   "chat.agentSkillsLocations": {
     ".github/skills": true,
-    ".github/shared/skills": true
+    ".github/shared/skills": true,
+    ".github/shared/vendor/last30days-skill/skills": true
   }
 }
 ```
@@ -227,7 +288,8 @@ clone.
        "${userHome}/copilot-workflow-base/prompts": true
      },
      "chat.agentSkillsLocations": {
-       "${userHome}/copilot-workflow-base/skills": true
+       "${userHome}/copilot-workflow-base/skills": true,
+       "${userHome}/copilot-workflow-base/vendor/last30days-skill/skills": true
      }
    }
    ```
