@@ -29,6 +29,7 @@ copilot-workflow-base/
 ├── instructions/          # *.instructions.md with applyTo globs (always-on baseline)
 │   ├── context-engineering.instructions.md   # applyTo: **
 │   ├── deck-design.instructions.md           # applyTo: deck specs, themes, builder code
+│   ├── engineering-discipline.instructions.md # applyTo: ** (how changes are made)
 │   ├── python.instructions.md                # applyTo: **/*.py, pyproject.toml, ...
 │   ├── readme.instructions.md                # applyTo: **/README.md
 │   └── tests.instructions.md                 # applyTo: tests/**
