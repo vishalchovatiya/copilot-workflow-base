@@ -30,6 +30,7 @@ copilot-workflow-base/
 │   ├── context-engineering.instructions.md   # applyTo: **
 │   ├── deck-design.instructions.md           # applyTo: deck specs, themes, builder code
 │   ├── engineering-discipline.instructions.md # applyTo: ** (how changes are made)
+│   ├── ponytail.instructions.md              # applyTo: ** (vendored, lazy-senior-dev ruleset)
 │   ├── python.instructions.md                # applyTo: **/*.py, pyproject.toml, ...
 │   ├── readme.instructions.md                # applyTo: **/README.md
 │   └── tests.instructions.md                 # applyTo: tests/**
@@ -57,6 +58,18 @@ copilot-workflow-base/
 
 Nothing here mentions any single project — it is deliberately domain-neutral so it can be
 consumed by many repos at once.
+
+[`ponytail.instructions.md`](instructions/ponytail.instructions.md) is the one vendored
+third-party file: a verbatim copy of the ruleset from
+[DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT), which VS Code
+Copilot Chat has no plugin for. Re-sync it from upstream rather than editing it in place:
+
+```bash
+curl -sSL -o /tmp/ponytail.md \
+  https://raw.githubusercontent.com/DietrichGebert/ponytail/main/.github/copilot-instructions.md
+```
+
+then diff it against everything below this repo's frontmatter block.
 
 ## Deck generation
 
